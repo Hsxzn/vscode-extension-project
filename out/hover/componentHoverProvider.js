@@ -249,7 +249,7 @@ function registerComponentHoverProvider() {
                     const typeText = prop.type && prop.type.trim().length > 0 ? prop.type : 'any';
                     const desc = (_a = prop.description) !== null && _a !== void 0 ? _a : '';
                     const def = (_b = prop.defaultValue) !== null && _b !== void 0 ? _b : '';
-                    const optional = prop.required ? 'false' : 'true';
+                    const optional = prop.required ? 'true' : 'false';
                     // mdLines.push(`- \`${prop.prop}\``);
                     // mdLines.push(`  - 说明：${desc || '—'}`);
                     // mdLines.push(`  - type：${typeText}`);

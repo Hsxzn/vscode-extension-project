@@ -253,7 +253,7 @@ export function registerComponentHoverProvider(): vscode.Disposable {
           const typeText = prop.type && prop.type.trim().length > 0 ? prop.type : 'any';
           const desc = prop.description ?? '';
           const def = prop.defaultValue ?? '';
-          const optional = prop.required ? 'false' : 'true';
+          const optional = prop.required ? 'true' : 'false';
 
           // mdLines.push(`- \`${prop.prop}\``);
           // mdLines.push(`  - 说明：${desc || '—'}`);
