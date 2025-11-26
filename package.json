@@ -1,0 +1,64 @@
+{
+  "name": "vscode-extension-project",
+  "displayName": "vscode-extension-project",
+  "description": "vscode vue组件自动收集和提示工具",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hsxzn/vscode-extension-project.git"
+  },
+  "license": "MIT",
+  "version": "0.0.1",
+  "publisher": "Hsxzn",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:extension.sampleCommand",
+    "onCommand:extension.generatePropsHints",
+    "onCommand:extension.openPropsHintsSettings",
+    "onCommand:extension.openPropsHintsFile"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.sampleCommand",
+        "title": "Sample Command"
+      },
+      {
+        "command": "extension.generatePropsHints",
+        "title": "Generate Vue/JS Props Hints"
+      },
+      {
+        "command": "extension.openPropsHintsSettings",
+        "title": "Open Props Hints Settings"
+      },
+      {
+        "command": "extension.openPropsHintsFile",
+        "title": "Open Generated Props Hints File"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p .",
+    "test": "npm run compile && node ./test/runTest.js",
+    "package:vsix": "vsce package --no-git"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.2.21",
+    "@types/mocha": "^9.0.0",
+    "@types/node": "^16.9.1",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.7.1",
+    "chai": "^4.3.4",
+    "eslint": "^7.32.0",
+    "glob": "^13.0.0",
+    "mocha": "^9.1.3",
+    "ts-loader": "^9.2.6",
+    "typescript": "^4.4.3",
+    "webpack": "^5.51.1",
+    "webpack-cli": "^4.8.0"
+  }
+}

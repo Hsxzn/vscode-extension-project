@@ -1,0 +1,1 @@
+{"version":3,"file":"sampleCommand.js","sourceRoot":"","sources":["../../src/commands/sampleCommand.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;;;GAGG;AACH,+CAAiC;AAEjC;;;;;;GAMG;AACH,SAAgB,qBAAqB;IACjC,MAAM,UAAU,GAAG,MAAM,CAAC,QAAQ,CAAC,eAAe,CAAC,yBAAyB,EAAE,KAAK,IAAI,EAAE;QACrF,OAAO,iBAAiB,CAAC;IAC7B,CAAC,CAAC,CAAC;IACH,OAAO,UAAU,CAAC;AACtB,CAAC;AALD,sDAKC"}
