@@ -34,7 +34,7 @@ const ensureChannel = () => {
     return outputChannel;
 };
 const formatMessage = (level, message) => {
-    return `[${level}] ${new Date().toISOString()} ${message}`;
+    return `[${level}] ${new Date().toLocaleString()} ${message}`;
 };
 function getLogger() {
     if (loggerInstance) {

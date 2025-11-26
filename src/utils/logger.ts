@@ -17,7 +17,7 @@ const ensureChannel = (): vscode.OutputChannel => {
 };
 
 const formatMessage = (level: 'INFO' | 'WARN' | 'ERROR', message: string): string => {
-    return `[${level}] ${new Date().toISOString()} ${message}`;
+    return `[${level}] ${new Date().toLocaleString()} ${message}`;
 };
 
 export function getLogger(): Logger {
