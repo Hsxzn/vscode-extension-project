@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## [0.0.4] - 2025-11-26
+### Changed
+- 修复 required 显示错误问题
+
 ## [0.0.3] - 2025-11-26
 ### Added
 - 为 `src/utils/logger.ts` 与 `src/types/vscode.d.ts` 引入 Output Channel 支持，并将运行日志同步输出到 VS Code 的 `Component Props Hints` 面板。
