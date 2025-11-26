@@ -25,26 +25,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * @file VS Code 扩展集成测试。
- * @description 使用 Mocha 和 VS Code 测试运行器，验证示例命令是否已注册且能正常执行。
+ * @description 使用 Mocha 和 VS Code 测试运行器，验证扩展可正常激活并返回可清理的 Disposable。
  */
 const assert = __importStar(require("assert"));
-const vscode = __importStar(require("vscode"));
 const extension_1 = require("../../extension");
 suite('Extension Test Suite', () => {
-    let disposable;
-    setup(async () => {
-        disposable = await (0, extension_1.activate)();
-    });
-    teardown(() => {
+    test('Extension activates and returns disposable', () => {
+        const disposable = (0, extension_1.activate)();
+        assert.ok(disposable, 'Extension should return a disposable to clean up resources');
         disposable.dispose();
-    });
-    test('Sample command should be registered', async () => {
-        const commands = await vscode.commands.getCommands(true);
-        assert.ok(commands.includes('extension.sampleCommand'), 'Sample command is not registered');
-    });
-    test('Sample command should execute successfully', async () => {
-        const result = await vscode.commands.executeCommand('extension.sampleCommand');
-        assert.strictEqual(result, 'Expected Result', 'Sample command did not return expected result');
     });
 });
 //# sourceMappingURL=extension.test.js.map

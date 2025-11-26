@@ -15,7 +15,6 @@
   },
   "activationEvents": [
     "onStartupFinished",
-    "onCommand:extension.sampleCommand",
     "onCommand:extension.generatePropsHints",
     "onCommand:extension.openPropsHintsSettings",
     "onCommand:extension.openPropsHintsFile"
@@ -23,10 +22,6 @@
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
-      {
-        "command": "extension.sampleCommand",
-        "title": "collect props:Sample Command"
-      },
       {
         "command": "extension.generatePropsHints",
         "title": "collect props:Generate Vue/JS Props Hints"

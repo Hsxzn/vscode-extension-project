@@ -4,16 +4,9 @@ import * as fs from 'fs';
 
 export function registerPropsHintsSettingsCommands(): vscode.Disposable[] {
     const openSettings = vscode.commands.registerCommand('extension.openPropsHintsSettings', async () => {
-        const folders = vscode.workspace.workspaceFolders;
-        if (!folders || folders.length === 0) {
-            vscode.window.showInformationMessage('未找到工作区');
-            return;
-        }
-
-        const root = folders[0].uri.fsPath;
-        const readmePath = path.join(root, 'README.md');
+        const readmePath = path.resolve(__dirname, '../../README.md');
         if (!fs.existsSync(readmePath)) {
-            vscode.window.showInformationMessage('当前工作区缺少 README.md');
+            vscode.window.showInformationMessage('扩展目录缺少 README.md');
             return;
         }
 

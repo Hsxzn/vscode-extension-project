@@ -378,9 +378,13 @@ export function buildHintsJson(list: ComponentPropsInfo[]): string {
  */
 export async function generatePropsHintsOnce(showMessage = true): Promise<void> {
     const logger = getLogger();
+    const startTime = Date.now();
+    logger.info('开始生成 props 提示文件');
     try {
         const files = readWorkspaceSrcFiles();
+        logger.info(`扫描 src 目录，发现 ${files.length} 个候选文件`);
         if (files.length === 0) {
+            logger.warn('未找到 src 目录或 .js/.vue 文件，跳过生成');
             if (showMessage) {
                 vscode.window.showInformationMessage('未在当前工作区找到 src 目录或 .js/.vue 文件');
             }
@@ -401,6 +405,7 @@ export async function generatePropsHintsOnce(showMessage = true): Promise<void> 
         }
 
         if (components.length === 0) {
+            logger.warn('文件中未解析到任何 props，跳过生成');
             if (showMessage) {
                 vscode.window.showInformationMessage('未在任何文件中解析到 props');
             }
@@ -425,10 +430,12 @@ export async function generatePropsHintsOnce(showMessage = true): Promise<void> 
         const jsonContent = buildHintsJson(components);
         fs.writeFileSync(dtsFile, dtsContent, 'utf8');
         fs.writeFileSync(jsonFile, jsonContent, 'utf8');
+        logger.info(`写入 ${dtsFile} 与 ${jsonFile}，包含 ${components.length} 个组件`);
 
         if (showMessage) {
             vscode.window.showInformationMessage(`props 提示文件已生成: ${dtsFile}`);
         }
+        logger.info(`props 提示生成流程完成，耗时 ${Date.now() - startTime}ms`);
     } catch (err) {
         logger.error('生成 props 提示文件失败', err as Error);
         if (showMessage) {

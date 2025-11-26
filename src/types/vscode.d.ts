@@ -32,6 +32,12 @@ declare module 'vscode' {
         function showInformationMessage(message: string): void;
         function showErrorMessage(message: string): void;
         function showTextDocument(doc: TextDocument, options?: { preview?: boolean }): Thenable<void>;
+        function createOutputChannel(name: string): OutputChannel;
+    }
+
+    export interface OutputChannel extends Disposable {
+        appendLine(value: string): void;
+        show(preserveFocus?: boolean): void;
     }
 
     export namespace commands {
