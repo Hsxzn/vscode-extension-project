@@ -12,10 +12,10 @@ VS Code 扩展：自动收集工作区 Vue/JavaScript 组件的 `props` 信息�
 ## VS Code 命令
 | 命令 ID | 标题 | 说明 |
 | --- | --- | --- |
-| `extension.generatePropsHints` | Generate Vue/JS Props Hints | 立即重新扫描并生成提示文件。|
-| `extension.openPropsHintsSettings` | Open Props Hints Settings | 打开内置 Markdown 说明，介绍生成策略。|
-| `extension.openPropsHintsFile` | Open Generated Props Hints File | 打开 `.vscode/component-props-hints.d.ts`。|
-| `extension.sampleCommand` | Sample Command | 用于扩展脚手架示例，可按需替换。|
+| `extension.generatePropsHints` | collect props:Generate Vue/JS Props Hints | 立即重新扫描并生成提示文件。|
+| `extension.openPropsHintsSettings` | collect props:Open Props Hints Settings | 打开内置 Markdown 说明，介绍生成策略。|
+| `extension.openPropsHintsFile` | collect props:Open Generated Props Hints File | 打开 `.vscode/component-props-hints.d.ts`。|
+| `extension.sampleCommand` | collect props:Sample Command | 用于扩展脚手架示例，可按需替换。|
 
 ## 生成产物
 - `.vscode/component-props-hints.d.ts`：导出 `componentPropsHints` 数组，便于在编辑器或其他脚本中引用。

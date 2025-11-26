@@ -24,19 +24,19 @@
     "commands": [
       {
         "command": "extension.sampleCommand",
-        "title": "Sample Command"
+        "title": "collect props:Sample Command"
       },
       {
         "command": "extension.generatePropsHints",
-        "title": "Generate Vue/JS Props Hints"
+        "title": "collect props:Generate Vue/JS Props Hints"
       },
       {
         "command": "extension.openPropsHintsSettings",
-        "title": "Open Props Hints Settings"
+        "title": "collect props:Open Props Hints Settings"
       },
       {
         "command": "extension.openPropsHintsFile",
-        "title": "Open Generated Props Hints File"
+        "title": "collect props:Open Generated Props Hints File"
       }
     ]
   },
@@ -44,7 +44,7 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p .",
     "test": "npm run compile && node ./test/runTest.js",
-    "package:vsix": "vsce package --no-git"
+    "package:vsix": "vsce package"
   },
   "devDependencies": {
     "@types/chai": "^4.2.21",
