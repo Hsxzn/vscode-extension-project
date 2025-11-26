@@ -37,6 +37,12 @@ export const componentPropsHints: ComponentPropHint[] = [
   // ...
 ];
 ```
+## 项目中 .gitignore 配置忽略
+```
+*.vscode/component-props-hints.*
+```
+
+
 
 ## 常见问题
 - **未找到 `src` 目录**：扩展不会生成任何文件，请确保工作区根目录存在 `src`。

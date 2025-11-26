@@ -29,6 +29,7 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 let cachedHints;
 let cachedWorkspaceRoot;
+let cachedHintsSignature;
 function getWorkspaceRoot() {
     const folders = vscode.workspace.workspaceFolders;
     if (!folders || folders.length === 0) {
@@ -41,18 +42,39 @@ function loadHintsFromWorkspace() {
     if (!root) {
         return undefined;
     }
-    if (cachedHints && cachedWorkspaceRoot === root) {
-        return cachedHints;
-    }
     const jsonPath = path.join(root, '.vscode', 'component-props-hints.json');
     if (!fs.existsSync(jsonPath)) {
+        cachedHints = undefined;
+        cachedWorkspaceRoot = undefined;
+        cachedHintsSignature = undefined;
         return undefined;
+    }
+    let signature;
+    try {
+        const jsonStat = fs.statSync(jsonPath);
+        const dtsPath = path.join(root, '.vscode', 'component-props-hints.d.ts');
+        let dtsMtime = 0;
+        try {
+            const dtsStat = fs.statSync(dtsPath);
+            dtsMtime = dtsStat.mtimeMs;
+        }
+        catch {
+            dtsMtime = 0;
+        }
+        signature = `${jsonStat.mtimeMs}-${dtsMtime}`;
+    }
+    catch {
+        return undefined;
+    }
+    if (cachedHints && cachedWorkspaceRoot === root && cachedHintsSignature === signature) {
+        return cachedHints;
     }
     try {
         const content = fs.readFileSync(jsonPath, 'utf8');
         const parsed = JSON.parse(content);
         cachedHints = parsed;
         cachedWorkspaceRoot = root;
+        cachedHintsSignature = signature;
         return parsed;
     }
     catch {
@@ -77,7 +99,7 @@ function buildFileLinkLine(filePath, line) {
     const base = vscode.Uri.file(absolutePath).toString();
     const target = line ? `${base}#L${line}` : base;
     const displayPath = filePath.replace(/\\/g, '/');
-    return `_定义文件：[${displayPath}](${target})_`;
+    return `_文件路径：[${displayPath}](${target})_`;
 }
 function resolveImportTarget(document, rawImportPath) {
     const root = getWorkspaceRoot();
@@ -221,21 +243,26 @@ function registerComponentHoverProvider() {
                     mdLines.push(fileLink);
                     mdLines.push('');
                 }
+                mdLines.push('| 属性 | 说明 | 类型 | 必传 | 默认值 |');
+                mdLines.push('| --- | --- | --- | --- | --- |');
                 for (const prop of componentHint.props) {
                     const typeText = prop.type && prop.type.trim().length > 0 ? prop.type : 'any';
                     const desc = (_a = prop.description) !== null && _a !== void 0 ? _a : '';
                     const def = (_b = prop.defaultValue) !== null && _b !== void 0 ? _b : '';
-                    const optional = prop.required ? '否' : '是';
-                    mdLines.push(`- \`${prop.prop}\``);
-                    mdLines.push(`  - 说明：${desc || '—'}`);
-                    mdLines.push(`  - 类型：${typeText}`);
-                    mdLines.push(`  - 可选：${optional}`);
-                    mdLines.push(`  - 默认值：${def || '—'}`);
+                    const optional = prop.required ? 'false' : 'true';
+                    // mdLines.push(`- \`${prop.prop}\``);
+                    // mdLines.push(`  - 说明：${desc || '—'}`);
+                    // mdLines.push(`  - type：${typeText}`);
+                    // mdLines.push(`  - required：${optional}`);
+                    // mdLines.push(`  - default：${def || '—'}`);
+                    // | `extension.generatePropsHints` | collect props:Generate Vue / JS Props Hints | 立即重新扫描并生成提示文件。|
+                    mdLines.push(` | \`${prop.prop}\` | ${desc || '—'} | ${typeText} | ${optional} | ${def || '—'} |`);
                 }
                 if (index < matched.length - 1) {
-                    mdLines.push('');
-                    mdLines.push('---');
-                    mdLines.push('');
+                    // mdLines.push('');
+                    // mdLines.push('---');
+                    // mdLines.push('');
+                    mdLines.push('| --- | --- | --- | --- | --- |');
                 }
             });
             const md = new vscode.MarkdownString(mdLines.join('\n'));

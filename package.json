@@ -7,8 +7,9 @@
     "url": "https://github.com/Hsxzn/vscode-extension-project.git"
   },
   "license": "MIT",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "Hsxzn",
+  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.60.0"
   },
@@ -43,7 +44,6 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p .",
-    "test": "npm run compile && node ./test/runTest.js",
     "package:vsix": "vsce package"
   },
   "devDependencies": {

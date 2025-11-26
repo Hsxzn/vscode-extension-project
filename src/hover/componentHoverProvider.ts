@@ -20,6 +20,7 @@ interface HoverComponentHint {
 
 let cachedHints: HoverComponentHint[] | undefined;
 let cachedWorkspaceRoot: string | undefined;
+let cachedHintsSignature: string | undefined;
 
 function getWorkspaceRoot(): string | undefined {
   const folders = vscode.workspace.workspaceFolders;
@@ -34,19 +35,40 @@ function loadHintsFromWorkspace(): HoverComponentHint[] | undefined {
   if (!root) {
     return undefined;
   }
-  if (cachedHints && cachedWorkspaceRoot === root) {
+  const jsonPath = path.join(root, '.vscode', 'component-props-hints.json');
+  if (!fs.existsSync(jsonPath)) {
+    cachedHints = undefined;
+    cachedWorkspaceRoot = undefined;
+    cachedHintsSignature = undefined;
+    return undefined;
+  }
+
+  let signature: string;
+  try {
+    const jsonStat = fs.statSync(jsonPath);
+    const dtsPath = path.join(root, '.vscode', 'component-props-hints.d.ts');
+    let dtsMtime = 0;
+    try {
+      const dtsStat = fs.statSync(dtsPath);
+      dtsMtime = dtsStat.mtimeMs;
+    } catch {
+      dtsMtime = 0;
+    }
+    signature = `${jsonStat.mtimeMs}-${dtsMtime}`;
+  } catch {
+    return undefined;
+  }
+
+  if (cachedHints && cachedWorkspaceRoot === root && cachedHintsSignature === signature) {
     return cachedHints;
   }
 
-  const jsonPath = path.join(root, '.vscode', 'component-props-hints.json');
-  if (!fs.existsSync(jsonPath)) {
-    return undefined;
-  }
   try {
     const content = fs.readFileSync(jsonPath, 'utf8');
     const parsed = JSON.parse(content) as HoverComponentHint[];
     cachedHints = parsed;
     cachedWorkspaceRoot = root;
+    cachedHintsSignature = signature;
     return parsed;
   } catch {
     return undefined;
@@ -69,7 +91,7 @@ function buildFileLinkLine(filePath?: string, line?: number): string | undefined
   const base = vscode.Uri.file(absolutePath).toString();
   const target = line ? `${base}#L${line}` : base;
   const displayPath = filePath.replace(/\\/g, '/');
-  return `_定义文件：[${displayPath}](${target})_`;
+  return `_文件路径：[${displayPath}](${target})_`;
 }
 
 function resolveImportTarget(document: vscode.TextDocument, rawImportPath: string): string | undefined {
@@ -224,23 +246,29 @@ export function registerComponentHoverProvider(): vscode.Disposable {
           mdLines.push('');
         }
 
+        mdLines.push('| 属性 | 说明 | 类型 | 必传 | 默认值 |');
+        mdLines.push('| --- | --- | --- | --- | --- |')
+
         for (const prop of componentHint.props) {
           const typeText = prop.type && prop.type.trim().length > 0 ? prop.type : 'any';
           const desc = prop.description ?? '';
           const def = prop.defaultValue ?? '';
-          const optional = prop.required ? '否' : '是';
+          const optional = prop.required ? 'false' : 'true';
 
-          mdLines.push(`- \`${prop.prop}\``);
-          mdLines.push(`  - 说明：${desc || '—'}`);
-          mdLines.push(`  - 类型：${typeText}`);
-          mdLines.push(`  - 可选：${optional}`);
-          mdLines.push(`  - 默认值：${def || '—'}`);
+          // mdLines.push(`- \`${prop.prop}\``);
+          // mdLines.push(`  - 说明：${desc || '—'}`);
+          // mdLines.push(`  - type：${typeText}`);
+          // mdLines.push(`  - required：${optional}`);
+          // mdLines.push(`  - default：${def || '—'}`);
+          // | `extension.generatePropsHints` | collect props:Generate Vue / JS Props Hints | 立即重新扫描并生成提示文件。|
+          mdLines.push(` | \`${prop.prop}\` | ${desc || '—'} | ${typeText} | ${optional} | ${def || '—'} |`);
         }
 
         if (index < matched.length - 1) {
-          mdLines.push('');
-          mdLines.push('---');
-          mdLines.push('');
+          // mdLines.push('');
+          // mdLines.push('---');
+          // mdLines.push('');
+          mdLines.push('| --- | --- | --- | --- | --- |')
         }
       });
 

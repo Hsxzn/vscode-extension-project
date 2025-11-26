@@ -19,6 +19,73 @@ export interface ComponentPropsInfo {
     props: PropInfo[];
 }
 
+/**
+ * 从 props 配置块中提取 default 字段的完整文本，支持箭头函数和对象/数组字面量。
+ * @param bodyPart props 声明中单个属性的文本。
+ * @returns default 字段的原始字符串，若不存在则返回 undefined。
+ */
+const extractDefaultValue = (bodyPart: string): string | undefined => {
+    const defaultKeyMatch = bodyPart.match(/default\s*:/);
+    if (!defaultKeyMatch || defaultKeyMatch.index === undefined) {
+        return undefined;
+    }
+
+    let cursor = defaultKeyMatch.index + defaultKeyMatch[0].length;
+    const total = bodyPart.length;
+
+    while (cursor < total && /\s/.test(bodyPart[cursor])) {
+        cursor++;
+    }
+
+    const start = cursor;
+    let end = total;
+    const stack: string[] = [];
+    let inString: string | null = null;
+    let prevChar = '';
+
+    for (let i = cursor; i < total; i++) {
+        const ch = bodyPart[i];
+
+        if (inString) {
+            if (ch === inString && prevChar !== '\\') {
+                inString = null;
+            }
+        } else {
+            if (ch === '"' || ch === '\'' || ch === '`') {
+                inString = ch;
+            } else if (ch === '(' || ch === '{' || ch === '[') {
+                stack.push(ch);
+            } else if (ch === ')' || ch === '}' || ch === ']') {
+                const last = stack[stack.length - 1];
+                if (last && ((last === '(' && ch === ')') || (last === '{' && ch === '}') || (last === '[' && ch === ']'))) {
+                    stack.pop();
+                } else if (stack.length === 0) {
+                    end = i;
+                    break;
+                }
+            } else if (ch === ',' && stack.length === 0) {
+                end = i;
+                break;
+            } else if (ch === '\n' && stack.length === 0) {
+                const rest = bodyPart.slice(i + 1);
+                if (/^\s*[A-Za-z0-9_\-$]+\s*:/.test(rest)) {
+                    end = i;
+                    break;
+                }
+            }
+        }
+
+        prevChar = ch;
+    }
+
+    const raw = bodyPart.slice(start, end).trim();
+    return raw || undefined;
+};
+
+/**
+ * 获取工作区 src 目录下所有 .js/.vue 文件的绝对路径。
+ * @returns 匹配到的文件路径数组，若没有匹配则返回空数组。
+ */
 export function readWorkspaceSrcFiles(): string[] {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
@@ -49,6 +116,12 @@ export function readWorkspaceSrcFiles(): string[] {
     return results;
 }
 
+/**
+ * 解析单个文件内容，提取 Vue Options API props 描述。
+ * @param filePath 文件绝对路径，主要用于日志与最终输出。
+ * @param content 文件文本内容。
+ * @returns 解析出的组件属性信息，若未找到 props 则返回 undefined。
+ */
 export function parsePropsFromContent(filePath: string, content: string): ComponentPropsInfo | undefined {
     const logger = getLogger();
     const fileName = path.basename(filePath, path.extname(filePath));
@@ -94,10 +167,11 @@ export function parsePropsFromContent(filePath: string, content: string): Compon
 
         // 先按顶层逗号拆分属性块，避免把 type/default 行当成独立 prop
         const blocks: string[] = [];
+        const blockComments: Array<string | undefined> = [];
         let current = '';
         let depth = 0;
         const lines = body.split(/\n/);
-        let pendingComment: string | undefined;
+        let commentBuffer: string | undefined;
 
         for (const raw of lines) {
             const line = raw.trim();
@@ -108,8 +182,8 @@ export function parsePropsFromContent(filePath: string, content: string): Compon
             // 单独一行注释，作为下一块属性的说明
             const commentMatch = line.match(/^\/\/\s*(.+)$/);
             if (commentMatch && depth === 0 && current === '') {
-                pendingComment = pendingComment
-                    ? pendingComment + ' ' + commentMatch[1].trim()
+                commentBuffer = commentBuffer
+                    ? commentBuffer + ' ' + commentMatch[1].trim()
                     : commentMatch[1].trim();
                 continue;
             }
@@ -126,19 +200,21 @@ export function parsePropsFromContent(filePath: string, content: string): Compon
             if (depth === 0 && (/,\s*$/.test(line) || /}\s*$/.test(line))) {
                 const cleaned = current.replace(/,\s*$/, '');
                 blocks.push(cleaned);
+                blockComments.push(commentBuffer);
                 current = '';
+                commentBuffer = undefined;
             }
         }
         if (current) {
             blocks.push(current);
+            blockComments.push(commentBuffer);
+            commentBuffer = undefined;
         }
 
-        let lastComment: string | undefined = pendingComment;
-
-        for (const block of blocks) {
+        blocks.forEach((block, index) => {
             const headerMatch = block.match(/^([A-Za-z0-9_\-$]+)\s*:/);
             if (!headerMatch) {
-                continue;
+                return;
             }
             const name = headerMatch[1];
             const bodyPart = block.slice(headerMatch[0].length).trim();
@@ -184,23 +260,21 @@ export function parsePropsFromContent(filePath: string, content: string): Compon
 
             const required = /required\s*:\s*true/.test(bodyPart);
 
-            let defaultValue: string | undefined;
-            const defaultMatch = bodyPart.match(/default\s*:\s*([^,}]+)/);
-            if (defaultMatch) {
-                defaultValue = defaultMatch[1].trim();
-            }
+            const defaultValue = extractDefaultValue(bodyPart);
 
             let description: string | undefined;
             const descMatch = bodyPart.match(/description\s*:\s*['"]([^'"]+)['"]/);
             if (descMatch) {
                 description = descMatch[1];
-            } else if (lastComment) {
-                description = lastComment;
+            } else {
+                const comment = blockComments[index];
+                if (comment) {
+                    description = comment;
+                }
             }
 
             props.push({ name, type, required, description, defaultValue });
-            lastComment = undefined;
-        }
+        });
     }
 
     // script setup 或 TS 类型支持可以后续增强，这里先简单处理
@@ -219,6 +293,11 @@ export function parsePropsFromContent(filePath: string, content: string): Compon
     };
 }
 
+/**
+ * 基于组件属性信息生成 d.ts 文件内容。
+ * @param list 所有组件的 props 描述集合。
+ * @returns 生成的 TypeScript 声明文本。
+ */
 export function buildHintsContent(list: ComponentPropsInfo[]): string {
     const serializeOptionalString = (value?: string): string => {
         if (value === undefined || value === null) {
@@ -264,6 +343,11 @@ export function buildHintsContent(list: ComponentPropsInfo[]): string {
     return lines.join('\n');
 }
 
+/**
+ * 将 props 信息序列化为 JSON，供扩展前端或其它工具消费。
+ * @param list 组件属性集合。
+ * @returns JSON 字符串，包含组件路径、行号及属性详情。
+ */
 export function buildHintsJson(list: ComponentPropsInfo[]): string {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     const root = workspaceFolders && workspaceFolders.length > 0 ? workspaceFolders[0].uri.fsPath : undefined;
@@ -288,6 +372,10 @@ export function buildHintsJson(list: ComponentPropsInfo[]): string {
     return JSON.stringify(items, null, 2);
 }
 
+/**
+ * 执行一次 props 提示文件生成流程，并根据需要提示用户结果。
+ * @param showMessage 是否通过 VS Code 弹窗提示结果。
+ */
 export async function generatePropsHintsOnce(showMessage = true): Promise<void> {
     const logger = getLogger();
     try {
@@ -349,6 +437,10 @@ export async function generatePropsHintsOnce(showMessage = true): Promise<void> 
     }
 }
 
+/**
+ * 注册 extension.generatePropsHints 命令。
+ * @returns VS Code Disposable，用于在扩展停用时清理命令。
+ */
 export function registerGeneratePropsHintsCommand(): vscode.Disposable {
     const command = vscode.commands.registerCommand('extension.generatePropsHints', async () => {
         await generatePropsHintsOnce(true);

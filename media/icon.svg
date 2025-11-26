@@ -1,0 +1,14 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Collect Props">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4a90e2" />
+      <stop offset="100%" stop-color="#7f52ff" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="20" fill="url(#grad)" />
+  <g fill="#ffffff" font-family="Segoe UI, Arial" font-size="20" text-anchor="middle">
+    <text x="64" y="30">Vue</text>
+    <text x="64" y="56">Props</text>
+    <text x="64" y="88">Hints</text>
+  </g>
+</svg>
