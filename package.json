@@ -19,7 +19,7 @@
     "onCommand:extension.openPropsHintsSettings",
     "onCommand:extension.openPropsHintsFile"
   ],
-  "main": "./out/extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
@@ -38,7 +38,9 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p .",
+    "build:ts": "tsc -p .",
+    "build:bundle": "webpack --mode production",
+    "compile": "npm run build:ts && npm run build:bundle",
     "package:vsix": "vsce package"
   },
   "devDependencies": {

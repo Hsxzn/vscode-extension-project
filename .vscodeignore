@@ -1,0 +1,17 @@
+**/.git
+**/.github
+.vscode/**
+node_modules/**
+src/**
+out/**
+test/**
+**/*.map
+media/**
+!media/icon.png
+CHANGELOG.md
+package-lock.json
+tsconfig.json
+development.md
+.eslintrc.json
+webpack.config.js
+.gitignore

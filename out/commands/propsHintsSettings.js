@@ -29,8 +29,12 @@ const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 function registerPropsHintsSettingsCommands() {
     const openSettings = vscode.commands.registerCommand('extension.openPropsHintsSettings', async () => {
-        const readmePath = path.resolve(__dirname, '../../README.md');
-        if (!fs.existsSync(readmePath)) {
+        const candidatePaths = [
+            path.resolve(__dirname, '../README.md'),
+            path.resolve(__dirname, '../../README.md'),
+        ];
+        const readmePath = candidatePaths.find(fs.existsSync);
+        if (!readmePath) {
             vscode.window.showInformationMessage('扩展目录缺少 README.md');
             return;
         }
