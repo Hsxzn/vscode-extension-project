@@ -83,7 +83,7 @@ const extractDefaultValue = (bodyPart: string): string | undefined => {
 };
 
 /**
- * 获取工作区 src 目录下所有 .js/.vue 文件的绝对路径。
+ * 获取工作区 src 目录下所有 .vue 文件的绝对路径。
  * @returns 匹配到的文件路径数组，若没有匹配则返回空数组。
  */
 export function readWorkspaceSrcFiles(): string[] {
@@ -98,7 +98,7 @@ export function readWorkspaceSrcFiles(): string[] {
     }
 
     const results: string[] = [];
-    const exts = ['.js', '.vue'];
+    const allowedExts = new Set(['.vue']);
 
     const walk = (dir: string) => {
         const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -106,7 +106,7 @@ export function readWorkspaceSrcFiles(): string[] {
             const full = path.join(dir, entry.name);
             if (entry.isDirectory()) {
                 walk(full);
-            } else if (exts.includes(path.extname(entry.name))) {
+            } else if (allowedExts.has(path.extname(entry.name).toLowerCase())) {
                 results.push(full);
             }
         }
@@ -114,13 +114,14 @@ export function readWorkspaceSrcFiles(): string[] {
 
     walk(srcDir);
     return results;
+    // return ['d:\\project\\EIS\\eis-ui-1\\src\\components\\pinyin-select\\index.vue']
 }
 
 /**
  * 解析单个文件内容，提取 Vue Options API props 描述。
  * @param filePath 文件绝对路径，主要用于日志与最终输出。
  * @param content 文件文本内容。
- * @returns 解析出的组件属性信息，若未找到 props 则返回 undefined。
+ * @returns 解析出的组件属性信息；若未声明 props，则返回 props 为空的结果；若解析失败则返回 undefined。
  */
 export function parsePropsFromContent(filePath: string, content: string): ComponentPropsInfo | undefined {
     const logger = getLogger();
@@ -172,9 +173,45 @@ export function parsePropsFromContent(filePath: string, content: string): Compon
         let depth = 0;
         const lines = body.split(/\n/);
         let commentBuffer: string | undefined;
+        let inBlockComment = false;
 
         for (const raw of lines) {
-            const line = raw.trim();
+            let line = raw.trim();
+
+            if (inBlockComment) {
+                const closeIndex = line.indexOf('*/');
+                const contentPart = closeIndex === -1 ? line : line.slice(0, closeIndex);
+                const normalized = contentPart.replace(/^\*\s?/, '').trim();
+                if (normalized) {
+                    commentBuffer = commentBuffer ? `${commentBuffer} ${normalized}` : normalized;
+                }
+                if (closeIndex !== -1) {
+                    inBlockComment = false;
+                    line = line.slice(closeIndex + 2).trim();
+                } else {
+                    continue;
+                }
+            }
+
+            if (line.startsWith('/**') || line.startsWith('/*')) {
+                const inlineClose = line.includes('*/');
+                let contentPart = line.replace(/^\/\*\*?/, '');
+                if (inlineClose) {
+                    const idx = contentPart.indexOf('*/');
+                    contentPart = idx === -1 ? contentPart : contentPart.slice(0, idx);
+                } else {
+                    inBlockComment = true;
+                }
+                const normalized = contentPart.replace(/^\*\s?/, '').trim();
+                if (normalized) {
+                    commentBuffer = commentBuffer ? `${commentBuffer} ${normalized}` : normalized;
+                }
+                if (!inlineClose) {
+                    continue;
+                }
+                line = ''; // 内容已处理
+            }
+
             if (!line) {
                 continue;
             }
@@ -279,11 +316,6 @@ export function parsePropsFromContent(filePath: string, content: string): Compon
 
     // script setup 或 TS 类型支持可以后续增强，这里先简单处理
 
-    if (props.length === 0) {
-        // logger.info(`No props found in ${filePath}`);
-        return undefined;
-    }
-
     return {
         file: filePath,
         componentName,
@@ -345,7 +377,7 @@ export function buildHintsContent(list: ComponentPropsInfo[]): string {
 
 /**
  * 将 props 信息序列化为 JSON，供扩展前端或其它工具消费。
- * @param list 组件属性集合。
+ * @param list 组件属性集合（允许 props 为空，以便 Hover 仍可展示基本信息）。
  * @returns JSON 字符串，包含组件路径、行号及属性详情。
  */
 export function buildHintsJson(list: ComponentPropsInfo[]): string {
@@ -372,6 +404,31 @@ export function buildHintsJson(list: ComponentPropsInfo[]): string {
     return JSON.stringify(items, null, 2);
 }
 
+const buildComponentsWithoutPropsMessage = (list: ComponentPropsInfo[], root?: string): string | undefined => {
+    if (list.length === 0) {
+        return undefined;
+    }
+
+    const maxItems = 5;
+    const normalizePath = (filePath: string): string => {
+        const raw = root ? path.relative(root, filePath) || path.basename(filePath) : filePath;
+        return raw.split(path.sep).join('/');
+    };
+
+    const entries = list.slice(0, maxItems).map(info => {
+        const displayName = info.componentScriptName ?? info.componentName;
+        const location = normalizePath(info.file);
+        return `${displayName} (${location})`;
+    });
+
+    let message = '以下组件未声明 props:\n' + entries.join('\n');
+    if (list.length > maxItems) {
+        message += `\n... 还有 ${list.length - maxItems} 个组件`;
+    }
+
+    return message;
+};
+
 /**
  * 执行一次 props 提示文件生成流程，并根据需要提示用户结果。
  * @param showMessage 是否通过 VS Code 弹窗提示结果。
@@ -384,42 +441,59 @@ export async function generatePropsHintsOnce(showMessage = true): Promise<void> 
         const files = readWorkspaceSrcFiles();
         logger.info(`扫描 src 目录，发现 ${files.length} 个候选文件`);
         if (files.length === 0) {
-            logger.warn('未找到 src 目录或 .js/.vue 文件，跳过生成');
+            logger.warn('未找到 src 目录或 .vue 文件，跳过生成');
             if (showMessage) {
-                vscode.window.showInformationMessage('未在当前工作区找到 src 目录或 .js/.vue 文件');
+                vscode.window.showInformationMessage('未在当前工作区找到 src 目录或 .vue 文件');
             }
             return;
         }
 
         const components: ComponentPropsInfo[] = [];
+        const componentsWithoutProps: ComponentPropsInfo[] = [];
         for (const file of files) {
             try {
                 const content = fs.readFileSync(file, 'utf8');
                 const info = parsePropsFromContent(file, content);
                 if (info) {
-                    components.push(info);
+                    if (info.props.length === 0) {
+                        componentsWithoutProps.push(info);
+                    } else {
+                        components.push(info);
+                    }
                 }
             } catch (e) {
                 logger.error(`读取文件失败: ${file}`, e as Error);
             }
         }
 
-        if (components.length === 0) {
-            logger.warn('文件中未解析到任何 props，跳过生成');
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        const workspaceRoot = workspaceFolders && workspaceFolders.length > 0 ? workspaceFolders[0].uri.fsPath : undefined;
+        const hasAnyComponent = components.length + componentsWithoutProps.length > 0;
+        if (!hasAnyComponent) {
+            logger.warn('文件中未解析到任何组件信息，跳过生成');
             if (showMessage) {
-                vscode.window.showInformationMessage('未在任何文件中解析到 props');
+                vscode.window.showInformationMessage('未在任何文件中解析到组件信息');
             }
             return;
         }
 
-        const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) {
             if (showMessage) {
                 vscode.window.showInformationMessage('未找到工作区');
             }
             return;
         }
-        const root = workspaceFolders[0].uri.fsPath;
+        const root = workspaceRoot!;
+
+        if (components.length === 0) {
+            logger.warn('文件中未解析到任何 props');
+            if (showMessage) {
+                const missingMessage = buildComponentsWithoutPropsMessage(componentsWithoutProps, root);
+                const baseMessage = '未在任何文件中解析到 props';
+                const finalMessage = missingMessage ? `${baseMessage}\n${missingMessage}` : baseMessage;
+                vscode.window.showInformationMessage(finalMessage);
+            }
+        }
         const outDir = path.join(root, '.vscode');
         if (!fs.existsSync(outDir)) {
             fs.mkdirSync(outDir, { recursive: true });
@@ -427,13 +501,23 @@ export async function generatePropsHintsOnce(showMessage = true): Promise<void> 
         const dtsFile = path.join(outDir, 'component-props-hints.d.ts');
         const jsonFile = path.join(outDir, 'component-props-hints.json');
         const dtsContent = buildHintsContent(components);
-        const jsonContent = buildHintsJson(components);
+        const allComponents = componentsWithoutProps.length > 0 ? [...components, ...componentsWithoutProps] : components;
+        const jsonContent = buildHintsJson(allComponents);
         fs.writeFileSync(dtsFile, dtsContent, 'utf8');
         fs.writeFileSync(jsonFile, jsonContent, 'utf8');
-        logger.info(`写入 ${dtsFile} 与 ${jsonFile}，包含 ${components.length} 个组件`);
+        logger.info(`写入 ${dtsFile} 与 ${jsonFile}，包含 ${components.length} 个 props 组件，Hover 可展示 ${allComponents.length} 个组件`);
+        if (componentsWithoutProps.length > 0) {
+            logger.info(`另有 ${componentsWithoutProps.length} 个组件未声明 props`);
+        }
 
         if (showMessage) {
             vscode.window.showInformationMessage(`props 提示文件已生成: ${dtsFile}`);
+            if (componentsWithoutProps.length > 0 && components.length > 0) {
+                const missingMessage = buildComponentsWithoutPropsMessage(componentsWithoutProps, root);
+                if (missingMessage) {
+                    vscode.window.showInformationMessage(missingMessage);
+                }
+            }
         }
         logger.info(`props 提示生成流程完成，耗时 ${Date.now() - startTime}ms`);
     } catch (err) {

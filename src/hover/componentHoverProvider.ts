@@ -246,29 +246,26 @@ export function registerComponentHoverProvider(): vscode.Disposable {
           mdLines.push('');
         }
 
-        mdLines.push('| 属性 | 说明 | 类型 | 必传 | 默认值 |');
-        mdLines.push('| --- | --- | --- | --- | --- |')
+        const props = componentHint.props ?? [];
+        if (props.length === 0) {
+          mdLines.push('_该组件未声明 props_');
+        } else {
+          mdLines.push('| 属性 | 说明 | 类型 | 必传 | 默认值 |');
+          mdLines.push('| --- | --- | --- | --- | --- |');
 
-        for (const prop of componentHint.props) {
-          const typeText = prop.type && prop.type.trim().length > 0 ? prop.type : 'any';
-          const desc = prop.description ?? '';
-          const def = prop.defaultValue ?? '';
-          const optional = prop.required ? 'true' : 'false';
-
-          // mdLines.push(`- \`${prop.prop}\``);
-          // mdLines.push(`  - 说明：${desc || '—'}`);
-          // mdLines.push(`  - type：${typeText}`);
-          // mdLines.push(`  - required：${optional}`);
-          // mdLines.push(`  - default：${def || '—'}`);
-          // | `extension.generatePropsHints` | collect props:Generate Vue / JS Props Hints | 立即重新扫描并生成提示文件。|
-          mdLines.push(` | \`${prop.prop}\` | ${desc || '—'} | ${typeText} | ${optional} | ${def || '—'} |`);
+          for (const prop of props) {
+            const typeText = prop.type && prop.type.trim().length > 0 ? prop.type : 'any';
+            const desc = prop.description ?? '';
+            const def = prop.defaultValue ?? '';
+            const optional = prop.required ? 'true' : 'false';
+            mdLines.push(` | \`${prop.prop}\` | ${desc || '—'} | ${typeText} | ${optional} | ${def || '—'} |`);
+          }
         }
 
         if (index < matched.length - 1) {
-          // mdLines.push('');
-          // mdLines.push('---');
-          // mdLines.push('');
-          mdLines.push('| --- | --- | --- | --- | --- |')
+          mdLines.push('');
+          mdLines.push('---');
+          mdLines.push('');
         }
       });
 

@@ -7,7 +7,7 @@
     "url": "https://github.com/Hsxzn/vscode-extension-project.git"
   },
   "license": "MIT",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "Hsxzn",
   "icon": "media/icon.png",
   "engines": {

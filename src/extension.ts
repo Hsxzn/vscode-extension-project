@@ -46,9 +46,9 @@ export function activate(context?: vscode.ExtensionContext): vscode.Disposable {
     logger.info('启动后执行一次 props 扫描');
     generatePropsHintsOnce(false);
 
-    // 监听 src 下 .js/.vue 变化，自动重新生成
-    const watcher = trackDisposable(ctx, vscode.workspace.createFileSystemWatcher('**/src/**/*.{js,vue}'));
-    logger.info('文件系统监听器已启动 (src/**/*.js, src/**/*.vue)');
+    // 仅监听 src 下 .vue 变化，自动重新生成
+    const watcher = trackDisposable(ctx, vscode.workspace.createFileSystemWatcher('**/src/**/*.vue'));
+    logger.info('文件系统监听器已启动 (src/**/*.vue)');
     const triggerRegeneration = (reason: string, uri?: vscode.Uri) => {
         const detail = uri ? `: ${uri.fsPath}` : '';
         logger.info(`检测到 ${reason}${detail}，准备重新生成 props 提示`);

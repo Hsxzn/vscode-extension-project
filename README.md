@@ -1,6 +1,6 @@
 # vscode-extension-project
 
-VS Code 扩展：自动收集工作区 Vue/JavaScript 组件的 `props` 信息，生成类型提示文件并提供悬浮提示
+VS Code 扩展：自动收集工作区 Vue 组件的 `props` 信息，生成类型提示文件并提供悬浮提示
 
 ## 解决问题
 
@@ -12,9 +12,9 @@ VS Code 扩展：自动收集工作区 Vue/JavaScript 组件的 `props` 信息�
 ![划入提示](./media/image2.png "划入提示")
 
 ## 功能概览
-- 启动或命令触发时扫描工作区根目录下 `src/**/*.js`、`src/**/*.vue` 文件，解析组件 `props`。
+- 启动或命令触发时扫描工作区根目录下 `src/**/*.vue` 文件，解析组件 `props`。
 - 自动生成 `.vscode/component-props-hints.d.ts` 与 `.vscode/component-props-hints.json`，用于类型提示与悬浮提示数据源。
-- 监听 `src` 目录中 `.js/.vue` 的增删改，自动增量更新提示文件。
+- 监听 `src` 目录中 `.vue` 的增删改，自动增量更新提示文件。
 - 提供命令面板操作（生成提示文件、打开配置说明、打开生成文件）。
 - 对在编辑器中引用的组件提供 `hover` 悬浮提示，展示 `props` 描述、类型、默认值等信息。
 
@@ -57,7 +57,7 @@ export const componentPropsHints: ComponentPropHint[] = [
 
 ## 常见问题
 - **未找到 `src` 目录**：扩展不会生成任何文件，请确保工作区根目录存在 `src`。
-- **提示文件未刷新**：确认 `src` 下文件事件是否被监听，或手动运行 `Generate Vue/JS Props Hints`。
+- **提示文件未刷新**：确认 `src` 下 `.vue` 文件事件是否被监听，或手动运行 `Generate Vue/JS Props Hints`。
 - **Hover 无数据**：确保 `.vscode/component-props-hints.json` 存在且解析成功，并在 Output 面板选择 `Component Props Hints` 查看日志详情。
 
 ## 贡献

@@ -1,11 +1,11 @@
 # vscode-extension-project
 
-VS Code 扩展：自动收集工作区 Vue/JavaScript 组件的 `props` 信息，生成类型提示文件并提供悬浮提示。本文档侧重说明各个依赖与脚本的用途，便于开发者快速理解和二次开发。
+VS Code 扩展：自动收集工作区 Vue 组件的 `props` 信息，生成类型提示文件并提供悬浮提示。本文档侧重说明各个依赖与脚本的用途，便于开发者快速理解和二次开发。
 
 ## 功能概览
-- 启动或命令触发时扫描工作区根目录下 `src/**/*.js`、`src/**/*.vue` 文件，解析组件 `props`。
+- 启动或命令触发时扫描工作区根目录下 `src/**/*.vue` 文件，解析组件 `props`。
 - 自动生成 `.vscode/component-props-hints.d.ts` 与 `.vscode/component-props-hints.json`，用于类型提示与悬浮提示数据源。
-- 监听 `src` 目录中 `.js/.vue` 的增删改，自动增量更新提示文件。
+- 监听 `src` 目录中 `.vue` 的增删改，自动增量更新提示文件。
 - 提供命令面板操作（生成提示文件、打开配置说明、打开生成文件）。
 - 对在编辑器中引用的组件提供 `hover` 悬浮提示，展示 `props` 描述、类型、默认值等信息。
 
@@ -78,7 +78,7 @@ export const componentPropsHints: ComponentPropHint[] = [
 ## 开发调试流程
 1. `npm run compile` 生成 `out/extension.js`。
 2. 打开 VS Code 调试视图，选择 “Run Extension” 配置启动目标 VS Code 实例。
-3. 在测试工作区中准备 `src` 目录及 `.vue/.js` 组件，运行 `Generate Vue/JS Props Hints`，观察 `.vscode` 目录下的文件输出以及 hover 效果。
+3. 在测试工作区中准备 `src` 目录及 `.vue` 组件，运行 `Generate Vue/JS Props Hints`，观察 `.vscode` 目录下的文件输出以及 hover 效果。
 4. 如需覆盖更多 `props` 格式，可在 `src/commands/generatePropsHints.ts` 内扩展解析逻辑（如 script setup、TypeScript 类型）。
 
 ## 测试
@@ -93,7 +93,7 @@ export const componentPropsHints: ComponentPropHint[] = [
 
 ## 常见问题
 - **未找到 `src` 目录**：扩展不会生成任何文件，请确保工作区根目录存在 `src`。
-- **提示文件未刷新**：确认 `src` 下文件事件是否被监听，或手动运行 `Generate Vue/JS Props Hints`。
+- **提示文件未刷新**：确认 `src` 下 `.vue` 文件事件是否被监听，或手动运行 `Generate Vue/JS Props Hints`。
 - **Hover 无数据**：确保 `.vscode/component-props-hints.json` 存在且解析成功，并在 Output 面板选择 `Component Props Hints` 检查日志。
 
 欢迎通过 Issue/PR 反馈问题或提交改进想法。
