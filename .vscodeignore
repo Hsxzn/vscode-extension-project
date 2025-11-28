@@ -8,7 +8,6 @@ test/**
 **/*.map
 media/**
 !media/icon.png
-CHANGELOG.md
 package-lock.json
 tsconfig.json
 development.md
