@@ -17,7 +17,9 @@
     "onStartupFinished",
     "onCommand:extension.generatePropsHints",
     "onCommand:extension.openPropsHintsSettings",
-    "onCommand:extension.openPropsHintsFile"
+    "onCommand:extension.openPropsHintsFile",
+    "onCommand:extension.openCurrentFileInInternalBrowser",
+    "onCommand:extension.openCurrentFileInSystemBrowser"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -33,8 +35,50 @@
       {
         "command": "extension.openPropsHintsFile",
         "title": "collect props:Open Generated Props Hints File"
+      },
+      {
+        "command": "extension.openCurrentFileInInternalBrowser",
+        "title": "VS Code 中打开",
+        "category": "打开文件"
+      },
+      {
+        "command": "extension.openCurrentFileInSystemBrowser",
+        "title": "系统浏览器打开",
+        "category": "打开文件"
       }
-    ]
+    ],
+    "submenus": [
+      {
+        "id": "extension.openFileSubmenu",
+        "label": "打开文件"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "submenu": "extension.openFileSubmenu",
+          "when": "explorerResourceIsFolder == false && resourceScheme == file",
+          "group": "9_openFile@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "submenu": "extension.openFileSubmenu",
+          "when": "resourceScheme == file",
+          "group": "9_openFile@1"
+        }
+      ],
+      "extension.openFileSubmenu": [
+        {
+          "command": "extension.openCurrentFileInInternalBrowser",
+          "group": "1_browser@1"
+        },
+        {
+          "command": "extension.openCurrentFileInSystemBrowser",
+          "group": "1_browser@2"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

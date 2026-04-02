@@ -29,10 +29,15 @@ declare module 'vscode' {
     }
 
     export namespace window {
+        const activeTextEditor: TextEditor | undefined;
         function showInformationMessage(message: string): void;
         function showErrorMessage(message: string): void;
         function showTextDocument(doc: TextDocument, options?: { preview?: boolean }): Thenable<void>;
         function createOutputChannel(name: string): OutputChannel;
+    }
+
+    export interface TextEditor {
+        readonly document: TextDocument;
     }
 
     export interface OutputChannel extends Disposable {
@@ -46,6 +51,10 @@ declare module 'vscode' {
         function executeCommand<T = unknown>(command: string, ...rest: any[]): Thenable<T>;
     }
 
+    export namespace env {
+        function openExternal(target: Uri): Thenable<boolean>;
+    }
+
     export interface Position { line: number; character: number; }
 
     export interface Range { start: Position; end: Position; }
@@ -57,6 +66,7 @@ declare module 'vscode' {
         readonly lineCount: number;
         getText(range?: Range): string;
         getWordRangeAtPosition(position: Position, regex?: RegExp): Range | undefined;
+        offsetAt(position: Position): number;
     }
 
     export interface Hover {

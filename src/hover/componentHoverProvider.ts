@@ -203,6 +203,101 @@ function getWordAtPosition(document: vscode.TextDocument, position: vscode.Posit
   return document.getText(range);
 }
 
+type VueBlockType = 'template' | 'script' | 'style';
+
+interface VueBlockRange {
+  type: VueBlockType;
+  contentStart: number;
+  contentEnd: number;
+}
+
+function getVueBlockRanges(text: string): VueBlockRange[] {
+  const ranges: VueBlockRange[] = [];
+  const openTagRegex = /<(template|script|style)\b[^>]*>/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = openTagRegex.exec(text)) !== null) {
+    const blockType = match[1].toLowerCase() as VueBlockType;
+    const contentStart = match.index + match[0].length;
+    const closeTagRegex = new RegExp(`</${blockType}\\s*>`, 'gi');
+    closeTagRegex.lastIndex = contentStart;
+    const closeMatch = closeTagRegex.exec(text);
+
+    if (!closeMatch) {
+      continue;
+    }
+
+    ranges.push({
+      type: blockType,
+      contentStart,
+      contentEnd: closeMatch.index,
+    });
+  }
+
+  return ranges;
+}
+
+export function getVueBlockTypeAtOffset(text: string, offset: number): VueBlockType | undefined {
+  const blocks = getVueBlockRanges(text);
+  const matched = blocks.find(block => offset >= block.contentStart && offset <= block.contentEnd);
+  return matched?.type;
+}
+
+export function isVueTagNameAtOffset(text: string, offset: number, word: string): boolean {
+  const lastOpenBracket = text.lastIndexOf('<', offset);
+  if (lastOpenBracket === -1) {
+    return false;
+  }
+
+  const lastCloseBracket = text.lastIndexOf('>', offset);
+  if (lastCloseBracket > lastOpenBracket) {
+    return false;
+  }
+
+  const nextCloseBracket = text.indexOf('>', lastOpenBracket);
+  if (nextCloseBracket === -1 || nextCloseBracket < offset) {
+    return false;
+  }
+
+  const tagContent = text.slice(lastOpenBracket, nextCloseBracket + 1);
+  if (/^<!--/.test(tagContent) || /^<![A-Z]/i.test(tagContent)) {
+    return false;
+  }
+
+  const tagMatch = tagContent.match(/^<\s*\/?\s*([A-Za-z][A-Za-z0-9_-]*)/);
+  if (!tagMatch || !tagMatch[1]) {
+    return false;
+  }
+
+  const tagName = tagMatch[1];
+  const tagNameStart = lastOpenBracket + tagContent.indexOf(tagName);
+  const tagNameEnd = tagNameStart + tagName.length;
+
+  return offset >= tagNameStart
+    && offset <= tagNameEnd
+    && tagName.toLocaleLowerCase() === word.toLocaleLowerCase();
+}
+
+export function shouldProvideComponentHover(document: vscode.TextDocument, position: vscode.Position, word: string): boolean {
+  if (document.languageId !== 'vue') {
+    return true;
+  }
+
+  const text = document.getText();
+  const offset = document.offsetAt(position);
+  const blockType = getVueBlockTypeAtOffset(text, offset);
+
+  if (blockType === 'template') {
+    return isVueTagNameAtOffset(text, offset, word);
+  }
+
+  if (blockType === 'script') {
+    return true;
+  }
+
+  return false;
+}
+
 export function registerComponentHoverProvider(): vscode.Disposable {
   const selector: vscode.DocumentSelector = [
     { language: 'vue', scheme: 'file' },
@@ -214,6 +309,7 @@ export function registerComponentHoverProvider(): vscode.Disposable {
     provideHover(document, position) {
       const word = getWordAtPosition(document, position);
       if (!word) return undefined;
+      if (!shouldProvideComponentHover(document, position, word)) return undefined;
 
       const hints = loadHintsFromWorkspace();
       if (!hints || hints.length === 0) return undefined;
